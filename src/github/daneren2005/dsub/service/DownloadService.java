@@ -1390,12 +1390,8 @@ public class DownloadService extends Service {
 					RouteInfo info = mediaRouter.getRouteForId(routeId);
 					if(info == null) {
 						setRemoteState(RemoteControlState.LOCAL, null);
-					} else if(newState == RemoteControlState.CHROMECAST) {
-						RemoteController controller = mediaRouter.getRemoteController(info);
-						if(controller != null) {
-							setRemoteState(RemoteControlState.CHROMECAST, controller);
-						}
 					}
+					
 					mediaRouter.stopScan();
 				}
 			};
@@ -1407,11 +1403,6 @@ public class DownloadService extends Service {
 					RouteInfo info = mediaRouter.getRouteForId(routeId);
 					if(info == null) {
 						handler.postDelayed(delayedReconnect, 2000L);
-					} else if(newState == RemoteControlState.CHROMECAST) {
-						RemoteController controller = mediaRouter.getRemoteController(info);
-						if(controller != null) {
-							setRemoteState(RemoteControlState.CHROMECAST, controller);
-						}
 					}
 				}
 			});

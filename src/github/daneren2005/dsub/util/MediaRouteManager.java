@@ -20,9 +20,6 @@ import android.support.v7.media.MediaRouteSelector;
 import android.support.v7.media.MediaRouter;
 import android.util.Log;
 
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.GooglePlayServicesUtil;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,7 +27,6 @@ import github.daneren2005.dsub.domain.RemoteControlState;
 import github.daneren2005.dsub.provider.JukeboxRouteProvider;
 import github.daneren2005.dsub.service.DownloadService;
 import github.daneren2005.dsub.service.RemoteController;
-import github.daneren2005.dsub.util.compat.CastCompat;
 
 import static android.support.v7.media.MediaRouter.RouteInfo;
 
@@ -39,7 +35,6 @@ import static android.support.v7.media.MediaRouter.RouteInfo;
  */
 public class MediaRouteManager extends MediaRouter.Callback {
 	private static final String TAG = MediaRouteManager.class.getSimpleName();
-	private static boolean castAvailable = false;
 
 	private DownloadService downloadService;
 	private MediaRouter router;
@@ -47,25 +42,9 @@ public class MediaRouteManager extends MediaRouter.Callback {
 	private List<MediaRouteProvider> providers = new ArrayList<MediaRouteProvider>();
 	private List<MediaRouteProvider> offlineProviders = new ArrayList<MediaRouteProvider>();
 
-	static {
-		try {
-			CastCompat.checkAvailable();
-			castAvailable = true;
-		} catch(Throwable t) {
-			castAvailable = false;
-		}
-	}
-
 	public MediaRouteManager(DownloadService downloadService) {
 		this.downloadService = downloadService;
 		router = MediaRouter.getInstance(downloadService);
-
-		// Check if play services is available
-		int result = GooglePlayServicesUtil.isGooglePlayServicesAvailable(downloadService);
-		if(result != ConnectionResult.SUCCESS){
-			Log.w(TAG, "No play services, failed with result: " + result);
-			castAvailable = false;
-		}
 
 		addProviders();
 		buildSelector();
@@ -79,13 +58,6 @@ public class MediaRouteManager extends MediaRouter.Callback {
 
 	@Override
 	public void onRouteSelected(MediaRouter router, RouteInfo info) {
-		if(castAvailable) {
-			RemoteController controller = CastCompat.getController(downloadService, info);
-			if(controller != null) {
-				downloadService.setRemoteEnabled(RemoteControlState.CHROMECAST, controller);
-			}
-		}
-
 		if(downloadService.isRemoteEnabled()) {
 			downloadService.registerRoute(router);
 		}
@@ -132,14 +104,7 @@ public class MediaRouteManager extends MediaRouter.Callback {
 
 		return null;
 	}
-	public RemoteController getRemoteController(RouteInfo info) {
-		if(castAvailable) {
-			return CastCompat.getController(downloadService, info);
-		} else {
-			return null;
-		}
-	}
-
+	
 	public void addOfflineProviders() {
 		JukeboxRouteProvider jukeboxProvider = new JukeboxRouteProvider(downloadService);
 		router.addProvider(jukeboxProvider);
@@ -161,9 +126,6 @@ public class MediaRouteManager extends MediaRouter.Callback {
 		MediaRouteSelector.Builder builder = new MediaRouteSelector.Builder();
 		if(UserUtil.canJukebox()) {
 			builder.addControlCategory(JukeboxRouteProvider.CATEGORY_JUKEBOX_ROUTE);
-		}
-		if(castAvailable) {
-			builder.addControlCategory(CastCompat.getCastControlCategory());
 		}
 		selector = builder.build();
 	}
